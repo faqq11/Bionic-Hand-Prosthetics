@@ -1,0 +1,57 @@
+------------------------------------------
+const int filterOrder = 4; // Orde filter
+
+float sensorValues[filterOrder + 1] = {0};
+float filteredValue = 0;
+int dataIndex = 0;
+
+int data[] = {39,38,38,38,38,38,38,46,39,192,249,211,223,144,116,141,95,84,82,105,87};
+
+const int maxADC = 1023;  // Nilai maksimum ADC
+const float maxVolt = 5.0;  // Nilai maksimum tegangan (dalam volt)
+
+void setup() {
+  // Mulai komunikasi serial
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Baca nilai dari data
+  int sensorValue = data[dataIndex];
+
+  // Konversi nilai ADC ke tegangan
+  float voltage = (sensorValue * maxVolt) / maxADC;
+
+  // Memperbarui array nilai sensor dengan nilai tegangan
+  for (int i = filterOrder; i > 0; i--) {
+    sensorValues[i] = sensorValues[i - 1];
+  }
+
+  sensorValues[0] = voltage;
+
+  // Hitung hasil filter Butterworth
+  filteredValue = 0;
+  for (int i = 0; i <= filterOrder; i++) {
+    filteredValue += sensorValues[i];
+  }
+
+  filteredValue /= (filterOrder + 1);
+
+  // Tampilkan nilai sensor dan hasil filter ke Serial Monitor
+  Serial.println(filteredValue);
+
+  // Increment indeks data
+  dataIndex++;
+
+  // Tambahkan delay sesuai dengan frekuensi sampel (misalnya, 1 kHz)
+  delay(1);  // 1 ms delay
+
+  // Cek jika semua data telah difilter
+  if (dataIndex >= sizeof(data) / sizeof(data[0])) {
+    // Semua data telah difilter, berhenti
+    while (true) {
+      // Program akan berhenti di sini
+    }
+  }
+}
+

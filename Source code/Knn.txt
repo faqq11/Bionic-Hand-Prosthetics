@@ -1,0 +1,93 @@
+#include <math.h>
+
+// Definisi jumlah data dan jumlah fitur
+const int NUM_GESTURES = 8;
+const int NUM_FEATURES = 21; // Ubah jumlah fitur menjadi 1
+
+// Definisi dataset
+double gestures[NUM_GESTURES][NUM_FEATURES] = {
+    {0.05,0.1,0.14,0.18,0.22,0.22,0.21,0.21,0.21,0.21,0.39,0.64,0.74,0.77,0.79,0.61,0.36,0.27,0.25,0.24,0.25}, // Gesture 1: cool
+    {0.04,0.08,0.11,0.15,0.19,0.19,0.19,0.19,0.19,0.35,0.55,0.72,0.89,1,0.92,0.82,0.7,0.57,0.51,0.5,0.44}, // Gesture 2: spiderman
+    {0.1,0.19,0.26,0.31,0.37,0.32,0.27,0.26,0.26,0.37,0.58,0.82,1.05,1.27,1.25,1.11,0.94,0.71,0.55,0.47,0.4}, // Gesture 3: 3 pew
+    {0.05,0.09,0.14,0.2,0.25,0.25,0.25,0.25,0.24,0.24,0.37,0.44,0.45,0.45,0.43,0.3,0.22,0.2,0.19,0.19,0.19},  // Gesture 4: 4 tengah
+    {0.18,0.18,0.18,0.19,0.19,0.18,0.19,0.19,0.19,0.18,0.18,0.18,0.18,0.19,0.19,0.18,0.19,0.19,0.19,0.18,0.18}, // Gesture 5: 5 terbuka
+    {0.19,0.19,0.25,0.84,1.17,2.1,2.31,1.95,1.53,1.34,1.12,1.08,1.01,1.07,1.23,1.09,1.15,0.74,0.5,0.35,0.28}, // Gesture 6 : 6 Genggam
+    {0.18,0.19,0.47,0.45,0.42,0.37,0.35,0.31,0.31,0.32,0.33,0.34,0.3,0.3,0.3,0.28,0.27,0.23,0.21,0.19,0.19}, // Gesture 7 : 7 oke tengah
+    {0.19,0.19,0.58,1.24,1.29,1.31,1.09,0.99,0.92,0.88,0.88,0.76,0.72,0.66,0.63,0.6,0.52,0.48,0.46,0.35,0.29} // Gesture 8 : 8 Sip
+};
+
+
+// Fungsi untuk menghitung jarak Euclidean antara dua vektor
+double euclideanDistance(const double a[], const double b[], int length) {
+    double sum = 0.0;
+    for (int i = 0; i < length; ++i) {
+        sum += pow((a[i] - b[i]), 2);
+    }
+    return sqrt(sum);
+}
+
+// Fungsi untuk melakukan klasifikasi menggunakan k-NN
+int classifyGesture(const double input[], int k, double distances[]) {
+    // Hitung jarak Euclidean antara input dan setiap data latih
+    for (int i = 0; i < NUM_GESTURES; ++i) {
+        distances[i] = euclideanDistance(input, gestures[i], NUM_FEATURES);
+    }
+
+    // Temukan kategori terdekat
+    int minIndex = 0;
+    for (int i = 1; i < NUM_GESTURES; ++i) {
+        if (distances[i] < distances[minIndex]) {
+            minIndex = i;
+        }
+    }
+
+    return minIndex + 1; // Mengembalikan indeks yang sesuai dengan kategori gerakan
+}
+
+const float alpha = 0.5;
+const float maxADCValue = 1023.0;
+const float maxVoltage = 5.0;
+const int sensorPin = A0; // Ganti dengan pin sensor EMG Anda
+float smoothedValue = 0.0;
+
+
+void setup() {
+    Serial.begin(9600);
+}
+
+void loop() {
+    double newData[NUM_FEATURES]; // Sesuaikan dengan jumlah fitur
+
+    // Membaca nilai dari sensor EMG dan memperbarui newData
+    for (int i = 0; i < NUM_FEATURES; ++i) {
+        int sensorValue = analogRead(sensorPin); // Membaca nilai dari sensor EMG
+
+        // Konversi nilai dari sensor ke tegangan (dari rentang 0-1023 ke rentang 0-5 volt)
+        float voltage = sensorValue * (maxVoltage / maxADCValue);
+
+        // Proses filtrasi
+        smoothedValue = alpha * voltage + (1 - alpha) * smoothedValue;
+
+        newData[i] = smoothedValue; // Menggunakan nilai yang telah difiltrasi
+
+        delay(10); // Delay untuk stabilitas
+    }
+
+    int k = 3;
+    double distances[NUM_GESTURES];
+    int classifiedGesture = classifyGesture(newData, k, distances);
+
+    // Menampilkan hasil klasifikasi dan perhitungan jarak Euclidean
+    Serial.print("Data baru diklasifikasikan sebagai Gesture ");
+    Serial.println(classifiedGesture);
+
+    Serial.println("Jarak Euclidean ke setiap kategori:");
+    for (int i = 0; i < NUM_GESTURES; ++i) {
+        Serial.print("Gesture ");
+        Serial.print(i + 1);
+        Serial.print(": ");
+        Serial.println(distances[i]);
+    }
+
+    delay(5000);
+}

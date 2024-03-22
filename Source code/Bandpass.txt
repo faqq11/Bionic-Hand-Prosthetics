@@ -1,0 +1,66 @@
+
+-------------------------------------------------------------------------
+const int filterOrder = 4; // Orde filter
+float sensorValues[filterOrder + 1] = {0};
+float filteredValue = 0;
+int dataIndex = 0;
+
+int data[] = {39,39,43,39,46,43,43,47,45,41};
+
+const int maxADC = 1023;  // Nilai maksimum ADC
+const float maxVolt = 5.0;  // Nilai maksimum tegangan (dalam volt)
+
+unsigned long startTime = 0; // Waktu mulai filtrasi
+
+void setup() {
+  // Mulai komunikasi serial
+  Serial.begin(9600);
+  startTime = micros(); // Catat waktu mulai filtrasi
+}
+
+void loop() {
+  // Baca nilai dari data
+  int sensorValue = data[dataIndex];
+
+  // Konversi nilai ADC ke tegangan
+  float voltage = (sensorValue * maxVolt) / maxADC;
+
+  // Memperbarui array nilai sensor dengan nilai tegangan
+  for (int i = filterOrder; i > 0; i--) {
+    sensorValues[i] = sensorValues[i - 1];
+  }
+
+  sensorValues[0] = voltage;
+
+  // Hitung hasil filter Butterworth
+  filteredValue = 0;
+  for (int i = 0; i <= filterOrder; i++) {
+    filteredValue += sensorValues[i];
+  }
+
+  filteredValue /= (filterOrder + 1);
+
+  // Tampilkan nilai sensor dan hasil filter ke Serial Monitor
+  Serial.println(filteredValue);
+
+  // Increment indeks data
+  dataIndex++;
+
+  // Tambahkan delay sesuai dengan frekuensi sampel (misalnya, 1 kHz)
+  delay(0);  // 1 ms delay
+
+  // Cek jika semua data telah difilter
+  if (dataIndex >= sizeof(data) / sizeof(data[0])) {
+    unsigned long endTime = micros(); // Catat waktu selesai filtrasi
+    unsigned long elapsedTime = endTime - startTime; // Hitung waktu yang diperlukan
+    Serial.print("Waktu yang diperlukan untuk filtrasi: ");
+    Serial.print(elapsedTime);
+    Serial.println(" milidetik");
+
+    while (true) {
+      // Program akan berhenti di sini
+    }
+  }
+}
+
+

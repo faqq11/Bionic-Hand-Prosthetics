@@ -1,0 +1,52 @@
+--
+const float alpha = 0.5; // Faktor penghalusan (0 < alpha < 1)
+const float maxADCValue = 1023.0; // Rentang nilai ADC
+const float maxVoltage = 5.0; // Rentang volt yang diinginkan
+
+int data[] = {37,38,37,37,37,37,37,37,37,37,37,37,37,37,37,38,37,37,37,37,
+37,37,37,37,37,37,37,37,37,37,37,37,37,38,37,37,37,37,37,37,
+37,37,37,37,37,37,37,38,37,37,37,37,37,37,37,37,37,37,37,37,
+37,37,37,37,37,38,37,37,37,37,37,37,37,37,37,37,37,37,37,37,
+37,37,37,37,37,37,37,37,37,45,378,491,806,653,548,329,338,308,
+385,289,219,69,41,41,37,38,37,37,37,37,37,37,61,170,252,235,
+217,239,293,346,392,580,366,369,73,40,38,39,38,38,37,37,37,
+47,311,352,353,358,280,374,388,280,172,47,39,38,38,37,37,37,
+38,98,352,697,431,454,439,350,305,120,59,40,39,40,42,39,38,
+37,37,37,37,49,239,312,271,334,283,279,292,198,119,46,40,38,
+38,38,37,37,37,37,37,37,37,37,37,37,37,37,3
+}; // Data Anda disini
+int dataSize = sizeof(data) / sizeof(data[0]);
+float smoothedValue = data[0] * (maxVoltage / maxADCValue); // Konversi nilai awal ke volt
+int currentIndex = 1;
+bool allDataFiltered = false; // Flag untuk menandai jika semua data telah difilter
+
+unsigned long startTime; // Variabel untuk menyimpan waktu mulai filtrasi
+
+void setup() {
+  Serial.begin(9600);
+  startTime = micros(); // Catat waktu mulai filtrasi
+}
+
+void loop() {
+  if (!allDataFiltered) {
+    if (currentIndex < dataSize) {
+      // Mengonversi nilai sensor ke nilai volt (dari rentang 0-1023 ke rentang 0-5 volt)
+      float voltage = data[currentIndex] * (maxVoltage / maxADCValue);
+
+      smoothedValue = alpha * voltage + (1 - alpha) * smoothedValue;
+      Serial.println(smoothedValue);
+      currentIndex++;
+    } else {
+      unsigned long endTime = micros(); // Catat waktu akhir filtrasi
+      unsigned long elapsedTime = endTime - startTime; // Hitung waktu yang diperlukan
+      Serial.print("Waktu yang diperlukan untuk filtrasi: ");
+      Serial.print(elapsedTime);
+      Serial.println(" milidetik");
+      
+      Serial.println("Semua data telah difilter. Penghalusan selesai.");
+      allDataFiltered = true; // Menandai bahwa semua data telah difilter
+      return; // Keluar dari loop utama
+    }
+  }
+  delay(0); // Delay sesuai dengan kebutuhan Anda
+}
